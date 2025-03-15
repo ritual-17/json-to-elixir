@@ -1,0 +1,6 @@
+{
+  "[gleam]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "gleam.gleam"
+  }
+}
