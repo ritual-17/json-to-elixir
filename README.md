@@ -1,4 +1,4 @@
-# json_to_elixir
+# json-to-elixir
 
 ## About
 
