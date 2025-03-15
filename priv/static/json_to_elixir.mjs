@@ -276,9 +276,9 @@ var Result = class _Result extends CustomType {
   }
 };
 var Ok = class extends Result {
-  constructor(value) {
+  constructor(value2) {
     super();
-    this[0] = value;
+    this[0] = value2;
   }
   // @internal
   isOk() {
@@ -374,8 +374,22 @@ function makeError(variant, module, line, fn, message, extra) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/option.mjs
+var Some = class extends CustomType {
+  constructor(x0) {
+    super();
+    this[0] = x0;
+  }
+};
 var None = class extends CustomType {
 };
+function to_result(option, e) {
+  if (option instanceof Some) {
+    let a = option[0];
+    return new Ok(a);
+  } else {
+    return new Error(e);
+  }
+}
 
 // build/dev/javascript/gleam_stdlib/dict.mjs
 var referenceMap = /* @__PURE__ */ new WeakMap();
@@ -1085,6 +1099,7 @@ var unequalDictSymbol = Symbol();
 
 // build/dev/javascript/gleam_stdlib/gleam_stdlib.mjs
 var Nil = void 0;
+var NOT_FOUND = {};
 function identity(x) {
   return x;
 }
@@ -1111,6 +1126,13 @@ function pop_grapheme(string4) {
   } else {
     return new Error(Nil);
   }
+}
+function concat(xs) {
+  let result = "";
+  for (const x of xs) {
+    result = result + x;
+  }
+  return result;
 }
 var unicode_whitespaces = [
   " ",
@@ -1140,13 +1162,82 @@ function new_map() {
 function map_to_list(map4) {
   return List.fromArray(map4.entries());
 }
-function map_insert(key, value, map4) {
-  return map4.set(key, value);
+function map_get(map4, key) {
+  const value2 = map4.get(key, NOT_FOUND);
+  if (value2 === NOT_FOUND) {
+    return new Error(Nil);
+  }
+  return new Ok(value2);
+}
+function map_insert(key, value2, map4) {
+  return map4.set(key, value2);
+}
+function classify_dynamic(data) {
+  if (typeof data === "string") {
+    return "String";
+  } else if (typeof data === "boolean") {
+    return "Bool";
+  } else if (data instanceof Result) {
+    return "Result";
+  } else if (data instanceof List) {
+    return "List";
+  } else if (data instanceof BitArray) {
+    return "BitArray";
+  } else if (data instanceof Dict) {
+    return "Dict";
+  } else if (Number.isInteger(data)) {
+    return "Int";
+  } else if (Array.isArray(data)) {
+    return `Tuple of ${data.length} elements`;
+  } else if (typeof data === "number") {
+    return "Float";
+  } else if (data === null) {
+    return "Null";
+  } else if (data === void 0) {
+    return "Nil";
+  } else {
+    const type = typeof data;
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  }
+}
+function decoder_error(expected, got) {
+  return decoder_error_no_classify(expected, classify_dynamic(got));
+}
+function decoder_error_no_classify(expected, got) {
+  return new Error(
+    List.fromArray([new DecodeError(expected, got, List.fromArray([]))])
+  );
+}
+function decode_string(data) {
+  return typeof data === "string" ? new Ok(data) : decoder_error("String", data);
+}
+function decode_int(data) {
+  return Number.isInteger(data) ? new Ok(data) : decoder_error("Int", data);
+}
+function decode_field(value2, name) {
+  const not_a_map_error = () => decoder_error("Dict", value2);
+  if (value2 instanceof Dict || value2 instanceof WeakMap || value2 instanceof Map) {
+    const entry = map_get(value2, name);
+    return new Ok(entry.isOk() ? new Some(entry[0]) : new None());
+  } else if (value2 === null) {
+    return not_a_map_error();
+  } else if (Object.getPrototypeOf(value2) == Object.prototype) {
+    return try_get_field(value2, name, () => new Ok(new None()));
+  } else {
+    return try_get_field(value2, name, not_a_map_error);
+  }
+}
+function try_get_field(value2, field2, or_else) {
+  try {
+    return field2 in value2 ? new Ok(new Some(value2[field2])) : or_else();
+  } catch {
+    return or_else();
+  }
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/dict.mjs
-function insert(dict2, key, value) {
-  return map_insert(key, value, dict2);
+function insert(dict2, key, value2) {
+  return map_insert(key, value2, dict2);
 }
 function reverse_and_concat(loop$remaining, loop$accumulator) {
   while (true) {
@@ -1181,6 +1272,42 @@ function keys(dict2) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/list.mjs
+function reverse_and_prepend(loop$prefix, loop$suffix) {
+  while (true) {
+    let prefix = loop$prefix;
+    let suffix = loop$suffix;
+    if (prefix.hasLength(0)) {
+      return suffix;
+    } else {
+      let first$1 = prefix.head;
+      let rest$1 = prefix.tail;
+      loop$prefix = rest$1;
+      loop$suffix = prepend(first$1, suffix);
+    }
+  }
+}
+function reverse(list2) {
+  return reverse_and_prepend(list2, toList([]));
+}
+function map_loop(loop$list, loop$fun, loop$acc) {
+  while (true) {
+    let list2 = loop$list;
+    let fun = loop$fun;
+    let acc = loop$acc;
+    if (list2.hasLength(0)) {
+      return reverse(acc);
+    } else {
+      let first$1 = list2.head;
+      let rest$1 = list2.tail;
+      loop$list = rest$1;
+      loop$fun = fun;
+      loop$acc = prepend(fun(first$1), acc);
+    }
+  }
+}
+function map(list2, fun) {
+  return map_loop(list2, fun, toList([]));
+}
 function fold(loop$list, loop$initial, loop$fun) {
   while (true) {
     let list2 = loop$list;
@@ -1238,6 +1365,122 @@ function drop_start(loop$string, loop$num_graphemes) {
       }
     }
   }
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/result.mjs
+function map2(result, fun) {
+  if (result.isOk()) {
+    let x = result[0];
+    return new Ok(fun(x));
+  } else {
+    let e = result[0];
+    return new Error(e);
+  }
+}
+function map_error(result, fun) {
+  if (result.isOk()) {
+    let x = result[0];
+    return new Ok(x);
+  } else {
+    let error = result[0];
+    return new Error(fun(error));
+  }
+}
+function try$(result, fun) {
+  if (result.isOk()) {
+    let x = result[0];
+    return fun(x);
+  } else {
+    let e = result[0];
+    return new Error(e);
+  }
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/dynamic.mjs
+var DecodeError = class extends CustomType {
+  constructor(expected, found, path) {
+    super();
+    this.expected = expected;
+    this.found = found;
+    this.path = path;
+  }
+};
+function map_errors(result, f) {
+  return map_error(
+    result,
+    (_capture) => {
+      return map(_capture, f);
+    }
+  );
+}
+function string(data) {
+  return decode_string(data);
+}
+function do_any(decoders) {
+  return (data) => {
+    if (decoders.hasLength(0)) {
+      return new Error(
+        toList([new DecodeError("another type", classify_dynamic(data), toList([]))])
+      );
+    } else {
+      let decoder = decoders.head;
+      let decoders$1 = decoders.tail;
+      let $ = decoder(data);
+      if ($.isOk()) {
+        let decoded = $[0];
+        return new Ok(decoded);
+      } else {
+        return do_any(decoders$1)(data);
+      }
+    }
+  };
+}
+function push_path(error, name) {
+  let name$1 = identity(name);
+  let decoder = do_any(
+    toList([
+      decode_string,
+      (x) => {
+        return map2(decode_int(x), to_string);
+      }
+    ])
+  );
+  let name$2 = (() => {
+    let $ = decoder(name$1);
+    if ($.isOk()) {
+      let name$22 = $[0];
+      return name$22;
+    } else {
+      let _pipe = toList(["<", classify_dynamic(name$1), ">"]);
+      let _pipe$1 = concat(_pipe);
+      return identity(_pipe$1);
+    }
+  })();
+  let _record = error;
+  return new DecodeError(
+    _record.expected,
+    _record.found,
+    prepend(name$2, error.path)
+  );
+}
+function field(name, inner_type) {
+  return (value2) => {
+    let missing_field_error = new DecodeError("field", "nothing", toList([]));
+    return try$(
+      decode_field(value2, name),
+      (maybe_inner) => {
+        let _pipe = maybe_inner;
+        let _pipe$1 = to_result(_pipe, toList([missing_field_error]));
+        let _pipe$2 = try$(_pipe$1, inner_type);
+        return map_errors(
+          _pipe$2,
+          (_capture) => {
+            return push_path(_capture, name);
+          }
+        );
+      }
+    );
+  };
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/bool.mjs
@@ -1358,14 +1601,29 @@ function handlers(element2) {
 }
 
 // build/dev/javascript/lustre/lustre/attribute.mjs
-function attribute(name, value) {
-  return new Attribute(name, identity(value), false);
+function attribute(name, value2) {
+  return new Attribute(name, identity(value2), false);
+}
+function property(name, value2) {
+  return new Attribute(name, identity(value2), true);
 }
 function on(name, handler) {
   return new Event("on" + name, handler);
 }
 function class$(name) {
   return attribute("class", name);
+}
+function id(name) {
+  return attribute("id", name);
+}
+function disabled(is_disabled) {
+  return property("disabled", is_disabled);
+}
+function src(uri) {
+  return attribute("src", uri);
+}
+function width(val) {
+  return property("width", val);
 }
 
 // build/dev/javascript/lustre/lustre/element.mjs
@@ -1581,15 +1839,15 @@ function createElementNode({ prev, next, dispatch, stack }) {
   const delegated = [];
   for (const attr of next.attrs) {
     const name = attr[0];
-    const value = attr[1];
+    const value2 = attr[1];
     if (attr.as_property) {
-      if (el[name] !== value)
-        el[name] = value;
+      if (el[name] !== value2)
+        el[name] = value2;
       if (canMorph)
         prevAttributes.delete(name);
     } else if (name.startsWith("on")) {
       const eventName = name.slice(2);
-      const callback = dispatch(value, eventName === "input");
+      const callback = dispatch(value2, eventName === "input");
       if (!handlersForEl.has(eventName)) {
         el.addEventListener(eventName, lustreGenericEventHandler);
       }
@@ -1603,25 +1861,25 @@ function createElementNode({ prev, next, dispatch, stack }) {
         el.addEventListener(eventName, lustreGenericEventHandler);
       }
       handlersForEl.set(eventName, callback);
-      el.setAttribute(name, value);
+      el.setAttribute(name, value2);
       if (canMorph) {
         prevHandlers.delete(eventName);
         prevAttributes.delete(name);
       }
     } else if (name.startsWith("delegate:data-") || name.startsWith("delegate:aria-")) {
-      el.setAttribute(name, value);
-      delegated.push([name.slice(10), value]);
+      el.setAttribute(name, value2);
+      delegated.push([name.slice(10), value2]);
     } else if (name === "class") {
-      className = className === null ? value : className + " " + value;
+      className = className === null ? value2 : className + " " + value2;
     } else if (name === "style") {
-      style2 = style2 === null ? value : style2 + value;
+      style2 = style2 === null ? value2 : style2 + value2;
     } else if (name === "dangerous-unescaped-html") {
-      innerHTML = value;
+      innerHTML = value2;
     } else {
-      if (el.getAttribute(name) !== value)
-        el.setAttribute(name, value);
+      if (el.getAttribute(name) !== value2)
+        el.setAttribute(name, value2);
       if (name === "value" || name === "selected")
-        el[name] = value;
+        el[name] = value2;
       if (canMorph)
         prevAttributes.delete(name);
     }
@@ -1648,9 +1906,9 @@ function createElementNode({ prev, next, dispatch, stack }) {
   if (next.tag === "slot") {
     window.queueMicrotask(() => {
       for (const child of el.assignedElements()) {
-        for (const [name, value] of delegated) {
+        for (const [name, value2] of delegated) {
           if (!child.hasAttribute(name)) {
-            child.setAttribute(name, value);
+            child.setAttribute(name, value2);
           }
         }
       }
@@ -1725,8 +1983,8 @@ function lustreServerEventHandler(event2) {
   return {
     tag,
     data: include.reduce(
-      (data2, property) => {
-        const path = property.split(".");
+      (data2, property2) => {
+        const path = property2.split(".");
         for (let i = 0, o = data2, e = event2; i < path.length; i++) {
           if (i === path.length - 1) {
             o[path[i]] = e[path[i]];
@@ -2121,8 +2379,14 @@ function main(attrs, children2) {
 function div(attrs, children2) {
   return element("div", attrs, children2);
 }
+function img(attrs) {
+  return element("img", attrs, toList([]));
+}
 function button(attrs, children2) {
   return element("button", attrs, children2);
+}
+function textarea(attrs, content) {
+  return element("textarea", attrs, toList([text(content)]));
 }
 
 // build/dev/javascript/lustre/lustre/event.mjs
@@ -2134,13 +2398,37 @@ function on_click(msg) {
     return new Ok(msg);
   });
 }
+function value(event2) {
+  let _pipe = event2;
+  return field("target", field("value", string))(
+    _pipe
+  );
+}
+function on_input(msg) {
+  return on2(
+    "input",
+    (event2) => {
+      let _pipe = value(event2);
+      return map2(_pipe, msg);
+    }
+  );
+}
+
+// build/dev/javascript/json_to_elixir/js/copyToClipboard.js
+function copy_to_clipboard() {
+  var copyText = document.getElementById("output-box");
+  copyText.select();
+  copyText.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(copyText.value);
+  alert("Copied the text: " + copyText.value);
+}
 
 // build/dev/javascript/json_to_elixir/json_to_elixir.mjs
 var Model2 = class extends CustomType {
-  constructor(word, input_language2, input, output) {
+  constructor(input_language, output_language, input, output) {
     super();
-    this.word = word;
-    this.input_language = input_language2;
+    this.input_language = input_language;
+    this.output_language = output_language;
     this.input = input;
     this.output = output;
   }
@@ -2149,52 +2437,49 @@ var JSON2 = class extends CustomType {
 };
 var Elixir = class extends CustomType {
 };
-var SetWord = class extends CustomType {
+var FlipInputMode = class extends CustomType {
+};
+var SetInput = class extends CustomType {
   constructor(x0) {
     super();
     this[0] = x0;
   }
 };
-var FlipInputMode = class extends CustomType {
+var CopyOutput = class extends CustomType {
 };
 function init2(_) {
-  return new Model2("", new JSON2(), "", "");
-}
-function update(model, msg) {
-  if (msg instanceof SetWord) {
-    let word = msg[0];
-    let _record = model;
-    return new Model2(
-      word,
-      _record.input_language,
-      _record.input,
-      _record.output
-    );
-  } else {
-    let new_input_language = (() => {
-      let $ = model.input_language;
-      if ($ instanceof JSON2) {
-        return new Elixir();
-      } else {
-        return new JSON2();
-      }
-    })();
-    let _record = model;
-    return new Model2(
-      _record.word,
-      new_input_language,
-      _record.input,
-      _record.output
-    );
-  }
+  return new Model2(new JSON2(), new Elixir(), "", "");
 }
 function header2() {
   return header(
-    toList([class$("flex items-center h-32 bg-purple-300 pl-10")]),
+    toList([
+      class$(
+        "flex items-center h-32 pl-10 bg-slate-800 text-purple-300"
+      )
+    ]),
     toList([
       h1(
         toList([class$("text-4xl")]),
         toList([text("JSON to Elixir Map")])
+      )
+    ])
+  );
+}
+function view_language_box(header3, text_box) {
+  return div(
+    toList([class$("flex flex-col w-1/2 gap-3")]),
+    toList([
+      div(
+        toList([class$("flex flex-row ml-12 text-2xl gap-3")]),
+        header3
+      ),
+      div(
+        toList([
+          class$(
+            "h-full w-full bg-gray-500 rounded-xl p-3 overflow-y-hidden"
+          )
+        ]),
+        text_box
       )
     ])
   );
@@ -2205,15 +2490,26 @@ function view_switch_button() {
     toList([text("Change Mode")])
   );
 }
-function input_language(model) {
-  return model.input_language;
-}
-function output_language(model) {
-  let $ = model.input_language;
-  if ($ instanceof JSON2) {
-    return new Elixir();
+function update(model, msg) {
+  if (msg instanceof FlipInputMode) {
+    return new Model2(
+      model.output_language,
+      model.input_language,
+      model.output,
+      model.input
+    );
+  } else if (msg instanceof SetInput) {
+    let text2 = msg[0];
+    let _record = model;
+    return new Model2(
+      _record.input_language,
+      _record.output_language,
+      text2,
+      _record.output
+    );
   } else {
-    return new JSON2();
+    copy_to_clipboard();
+    return model;
   }
 }
 var json_string = "JSON";
@@ -2225,20 +2521,63 @@ function to_string2(language) {
     return elixir_string;
   }
 }
-function view_language_box(_, language) {
-  return div(
-    toList([class$("flex flex-col  w-1/2 items-center")]),
+function view_input_box(model) {
+  return view_language_box(
+    toList([text(to_string2(model.input_language))]),
     toList([
-      div(
-        toList([class$("text-2xl")]),
-        toList([text(to_string2(language))])
+      textarea(
+        toList([
+          class$(
+            "h-full w-full rounded-lg bg-white p-3 text-start text-black text-wrap resize-none"
+          ),
+          on_input((var0) => {
+            return new SetInput(var0);
+          })
+        ]),
+        model.input
+      )
+    ])
+  );
+}
+function view_output_box(model) {
+  return view_language_box(
+    toList([
+      text(to_string2(model.output_language)),
+      button(
+        toList([class$("text-lg"), on_click(new CopyOutput())]),
+        toList([
+          img(
+            toList([
+              src(
+                "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fpics.freeicons.io%2Fuploads%2Ficons%2Fpng%2F4498062351543238871-512.png&f=1&nofb=1&ipt=153bcca2c44542e83a362d25d403f1f1822c8a16d7825efebed0fe8056e302c0&ipo=images"
+              ),
+              width(35)
+            ])
+          )
+        ])
+      )
+    ]),
+    toList([
+      textarea(
+        toList([
+          id("output-box"),
+          class$(
+            "h-full w-full rounded-lg bg-white p-3 text-start text-black text-wrap resize-none"
+          ),
+          disabled(true)
+        ]),
+        model.output
       )
     ])
   );
 }
 function main_area(model) {
   return main(
-    toList([class$("flex-grow p-6 bg-white overflow-y-hidden")]),
+    toList([
+      class$(
+        "flex-grow p-6 bg-slate-800 overflow-y-hidden text-white"
+      )
+    ]),
     toList([
       div(
         toList([
@@ -2247,9 +2586,9 @@ function main_area(model) {
           )
         ]),
         toList([
-          view_language_box(model, input_language(model)),
+          view_input_box(model),
           view_switch_button(),
-          view_language_box(model, output_language(model))
+          view_output_box(model)
         ])
       )
     ])
@@ -2268,7 +2607,7 @@ function main2() {
     throw makeError(
       "let_assert",
       "json_to_elixir",
-      11,
+      12,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $ }
