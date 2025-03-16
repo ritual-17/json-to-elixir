@@ -12,6 +12,7 @@ pub fn lex(string: String) {
 fn lex_r(chars: List(String), tokens: List(String)) -> List(String) {
   use <- check_for_chars_remaining(chars, tokens)
   use <- check_for_string(chars, tokens)
+  use <- check_for_number(chars, tokens)
   // let #(number, chars) = lex_number(chars)
   // tokens
   check_for_whitespace_or_json_syntax_char(chars, tokens)
@@ -51,21 +52,72 @@ fn lex_string_r(
   }
 }
 
+fn check_for_number(chars, tokens, continue) {
+  let #(number, chars) = lex_number(chars)
+
+  case number {
+    None -> continue()
+    Some(number) -> lex_r(chars, list.append(tokens, [number]))
+  }
+}
+
 fn lex_number(chars: List(String)) -> #(Option(String), List(String)) {
+  let original_chars = chars
+  let #(number_string, chars) = strip_negative(chars)
+
+  use chars, number_string <- check_if_start_of_number(
+    chars,
+    original_chars,
+    number_string,
+  )
+  let #(chars, number_string) = get_whole_number(chars, number_string)
+  let #(chars, number_string) = get_fraction_number(chars, number_string)
+  #(Some(number_string), chars)
+  // lex_number_r(chars, base_number)
+}
+
+fn strip_negative(chars) {
   case chars {
-    ["-", ..rest] -> {
-      case lex_number_r(rest, "-") {
-        #(None, _) -> #(None, chars)
-        #(number, rest) -> #(number, rest)
+    ["-" as base_number, ..rest] -> #(base_number, rest)
+    _ -> #("", chars)
+  }
+}
+
+fn check_if_start_of_number(chars, original_chars, number_string, continue) {
+  case chars {
+    [char, ..rest] -> {
+      case check_digit(char) {
+        True -> continue(rest, number_string <> char)
+        False -> #(None, original_chars)
       }
     }
-    [char, ..] -> {
-      case check_start_of_number(char) {
-        True -> lex_number_r(chars, "")
-        False -> #(None, chars)
+    _ -> #(None, original_chars)
+  }
+}
+
+fn get_whole_number(chars, number) {
+  case number {
+    "0" -> #(chars, number)
+    _ -> get_whole_number_r(chars, number)
+  }
+}
+
+fn get_whole_number_r(chars, number) {
+  case chars {
+    [char, ..rest] -> {
+      case check_digit(char) {
+        True -> get_whole_number_r(rest, number <> char)
+        False -> #(chars, number)
       }
     }
-    _ -> #(None, chars)
+    _ -> #(chars, number)
+  }
+}
+
+fn get_fraction_number(chars, number) {
+  case chars {
+    [".", ..rest] -> get_whole_number_r(rest, number <> ".")
+    _ -> #(chars, number)
   }
 }
 
@@ -76,12 +128,12 @@ fn lex_number_r(
   todo
 }
 
-fn check_start_of_number(char: String) -> Bool {
-  check(char, "[-0-9]")
-}
-
 fn check_digit(char: String) -> Bool {
   check(char, "[0-9]")
+}
+
+fn check_digit_1_to_9(char: String) -> Bool {
+  check(char, "[1-9]")
 }
 
 fn check(char: String, regex: String) {

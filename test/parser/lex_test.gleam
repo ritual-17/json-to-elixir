@@ -46,6 +46,71 @@ pub fn lex_string_list_value_test() {
   assert_token_result(json, expected)
 }
 
+pub fn lex_whole_number_value_test() {
+  let json =
+    "
+  {
+    \"temperature\": 18
+  }
+  "
+
+  let expected = ["{", "temperature", ":", "18", "}"]
+
+  assert_token_result(json, expected)
+}
+
+pub fn lex_negative_whole_number_value_test() {
+  let json =
+    "
+  {
+    \"temperature\": -18
+  }
+  "
+
+  let expected = ["{", "temperature", ":", "-18", "}"]
+
+  assert_token_result(json, expected)
+}
+
+pub fn lex_0_value_test() {
+  let json =
+    "
+  {
+    \"temperature\": 0
+  }
+  "
+
+  let expected = ["{", "temperature", ":", "0", "}"]
+
+  assert_token_result(json, expected)
+}
+
+pub fn lex_0_start_invalid_value_test() {
+  let json =
+    "
+  {
+    \"temperature\": 020
+  }
+  "
+
+  let expected = ["{", "temperature", ":", "0", "20", "}"]
+
+  assert_token_result(json, expected)
+}
+
+pub fn lex_0_start_fraction_value_test() {
+  let json =
+    "
+  {
+    \"temperature\": 0.20
+  }
+  "
+
+  let expected = ["{", "temperature", ":", "0.20", "}"]
+
+  assert_token_result(json, expected)
+}
+
 fn assert_token_result(json: String, token_result: List(String)) {
   token_result |> should.equal(lex.lex(json))
 }
