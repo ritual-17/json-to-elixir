@@ -10,32 +10,26 @@ pub fn lex(string: String) {
 }
 
 fn lex_r(chars: List(String), tokens: List(String)) -> List(String) {
+  use <- check_for_chars_remaining(chars, tokens)
+  use <- check_for_string(chars, tokens)
+  // let #(number, chars) = lex_number(chars)
+  // tokens
+  check_for_whitespace_or_json_syntax_char(chars, tokens)
+}
+
+fn check_for_chars_remaining(chars, tokens, continue) {
   case chars {
     [] -> tokens
-    chars -> {
-      let #(string, chars) = lex_string(chars)
-      case string {
-        None -> {
-          // let #(number, chars) = lex_number(chars)
-          // tokens
-          case chars {
-            [" ", ..rest] -> lex_r(rest, tokens)
-            ["\t", ..rest] -> lex_r(rest, tokens)
-            // ["\b", ..rest] -> lex_r(rest, tokens)
-            ["\n", ..rest] -> lex_r(rest, tokens)
-            ["\r", ..rest] -> lex_r(rest, tokens)
-            ["{" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
-            ["}" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
-            ["[" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
-            ["]" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
-            [":" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
-            ["," as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
-            _ -> panic
-          }
-        }
-        Some(string) -> lex_r(chars, list.append(tokens, [string]))
-      }
-    }
+    _ -> continue()
+  }
+}
+
+fn check_for_string(chars, tokens, continue) {
+  let #(string, chars) = lex_string(chars)
+
+  case string {
+    None -> continue()
+    Some(string) -> lex_r(chars, list.append(tokens, [string]))
   }
 }
 
@@ -93,4 +87,21 @@ fn check_digit(char: String) -> Bool {
 fn check(char: String, regex: String) {
   let assert Ok(re) = from_string(regex)
   regexp.check(re, char)
+}
+
+fn check_for_whitespace_or_json_syntax_char(chars, tokens) {
+  case chars {
+    [" ", ..rest] -> lex_r(rest, tokens)
+    ["\t", ..rest] -> lex_r(rest, tokens)
+    // ["\b", ..rest] -> lex_r(rest, tokens)
+    ["\n", ..rest] -> lex_r(rest, tokens)
+    ["\r", ..rest] -> lex_r(rest, tokens)
+    ["{" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
+    ["}" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
+    ["[" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
+    ["]" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
+    [":" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
+    ["," as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
+    _ -> panic
+  }
 }
