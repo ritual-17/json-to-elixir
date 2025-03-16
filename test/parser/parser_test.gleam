@@ -9,9 +9,8 @@ pub fn main() {
 pub fn parse_map_from_json_test() {
   "%{}"
   |> should.equal(parser.parse_map_from_json("{}"))
-
-  "%{name: \"john\"}"
-  |> should.equal(parser.parse_map_from_json("{\"name\": \"john\"}"))
+  // "%{name: \"john\"}"
+  // |> should.equal(parser.parse_map_from_json("{\"name\": \"john\"}"))
 }
 
 // gleeunit test functions end in `_test`

@@ -16,8 +16,22 @@ fn lex_r(chars: List(String), tokens: List(String)) -> List(String) {
       let #(string, chars) = lex_string(chars)
       case string {
         None -> {
-          let #(number, chars) = lex_number(chars)
-          tokens
+          // let #(number, chars) = lex_number(chars)
+          // tokens
+          case chars {
+            [" ", ..rest] -> lex_r(rest, tokens)
+            ["\t", ..rest] -> lex_r(rest, tokens)
+            // ["\b", ..rest] -> lex_r(rest, tokens)
+            ["\n", ..rest] -> lex_r(rest, tokens)
+            ["\r", ..rest] -> lex_r(rest, tokens)
+            ["{" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
+            ["}" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
+            ["[" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
+            ["]" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
+            [":" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
+            ["," as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
+            _ -> panic
+          }
         }
         Some(string) -> lex_r(chars, list.append(tokens, [string]))
       }
@@ -45,9 +59,15 @@ fn lex_string_r(
 
 fn lex_number(chars: List(String)) -> #(Option(String), List(String)) {
   case chars {
-    [char, ..rest] -> {
+    ["-", ..rest] -> {
+      case lex_number_r(rest, "-") {
+        #(None, _) -> #(None, chars)
+        #(number, rest) -> #(number, rest)
+      }
+    }
+    [char, ..] -> {
       case check_start_of_number(char) {
-        True -> lex_number_r(rest, char)
+        True -> lex_number_r(chars, "")
         False -> #(None, chars)
       }
     }
