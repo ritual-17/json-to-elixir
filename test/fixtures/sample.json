@@ -1,0 +1,6 @@
+{
+  "first": "john",
+  "last": "doe",
+  "age": 30,
+  "hobbies": ["walking", "fishing"]
+}

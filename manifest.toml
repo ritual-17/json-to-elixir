@@ -42,7 +42,8 @@ packages = [
 ]
 
 [requirements]
-gleam_stdlib = { version = ">= 0.44.0 and < 2.0.0" }
+gleam_regexp = { version = ">= 1.1.0 and < 2.0.0" }
+gleam_stdlib = { version = ">= 0.57.0 and < 1.0.0" }
 gleeunit = { version = ">= 1.0.0 and < 2.0.0" }
 lustre = { version = ">= 4.6.4 and < 5.0.0" }
 lustre_dev_tools = { version = ">= 1.6.5 and < 2.0.0" }
