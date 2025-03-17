@@ -4,3 +4,5 @@
 erl_crash.dump
 
 .vscode
+priv/static/*.mjs
+priv/static/*.css
