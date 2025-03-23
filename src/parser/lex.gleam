@@ -1,15 +1,16 @@
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{None, Some}
 import gleam/regexp.{from_string}
 import gleam/string
+import parser/types/json
 
-pub fn lex(string: String) {
+pub fn lex(string) {
   string
   |> string.to_graphemes
   |> lex_r([])
 }
 
-fn lex_r(chars: List(String), tokens: List(String)) -> List(String) {
+fn lex_r(chars, tokens) {
   use <- check_for_chars_remaining(chars, tokens)
   use <- check_for_string(chars, tokens)
   use <- check_for_number(chars, tokens)
@@ -34,19 +35,16 @@ fn check_for_string(chars, tokens, continue) {
   }
 }
 
-fn lex_string(chars: List(String)) -> #(Option(String), List(String)) {
+fn lex_string(chars) {
   case chars {
     ["\"", ..rest] -> lex_string_r(rest, "")
     _ -> #(None, chars)
   }
 }
 
-fn lex_string_r(
-  chars: List(String),
-  string: String,
-) -> #(Option(String), List(String)) {
+fn lex_string_r(chars, string) {
   case chars {
-    ["\"", ..rest] -> #(Some(string), rest)
+    ["\"", ..rest] -> #(Some(json.String(string)), rest)
     [char, ..rest] -> lex_string_r(rest, string <> char)
     _ -> panic
   }
@@ -57,11 +55,11 @@ fn check_for_number(chars, tokens, continue) {
 
   case number {
     None -> continue()
-    Some(number) -> lex_r(chars, list.append(tokens, [number]))
+    Some(number) -> lex_r(chars, list.append(tokens, [json.Number(number)]))
   }
 }
 
-fn lex_number(chars: List(String)) -> #(Option(String), List(String)) {
+fn lex_number(chars) {
   let original_chars = chars
   let #(chars, number_string) = strip_negative(chars)
 
@@ -142,15 +140,11 @@ fn strip_magnitude_sign(chars, number) {
   }
 }
 
-fn check_digit(char: String) -> Bool {
+fn check_digit(char) {
   check(char, "[0-9]")
 }
 
-fn check_digit_1_to_9(char: String) -> Bool {
-  check(char, "[1-9]")
-}
-
-fn check(char: String, regex: String) {
+fn check(char, regex) {
   let assert Ok(re) = from_string(regex)
   regexp.check(re, char)
 }
@@ -159,15 +153,14 @@ fn check_for_whitespace_or_json_syntax_char(chars, tokens) {
   case chars {
     [" ", ..rest] -> lex_r(rest, tokens)
     ["\t", ..rest] -> lex_r(rest, tokens)
-    // ["\b", ..rest] -> lex_r(rest, tokens)
     ["\n", ..rest] -> lex_r(rest, tokens)
     ["\r", ..rest] -> lex_r(rest, tokens)
-    ["{" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
-    ["}" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
-    ["[" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
-    ["]" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
-    [":" as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
-    ["," as token, ..rest] -> lex_r(rest, list.append(tokens, [token]))
+    ["{", ..rest] -> lex_r(rest, list.append(tokens, [json.CurlyOpen]))
+    ["}", ..rest] -> lex_r(rest, list.append(tokens, [json.CurlyClose]))
+    ["[", ..rest] -> lex_r(rest, list.append(tokens, [json.ArrayOpen]))
+    ["]", ..rest] -> lex_r(rest, list.append(tokens, [json.ArrayClose]))
+    [":", ..rest] -> lex_r(rest, list.append(tokens, [json.Colon]))
+    [",", ..rest] -> lex_r(rest, list.append(tokens, [json.Comma]))
     _ -> panic
   }
 }
