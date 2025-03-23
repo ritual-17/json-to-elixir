@@ -336,6 +336,25 @@ pub fn lex_boolean_value_false_test() {
   assert_token_result(json, expected)
 }
 
+pub fn lex_null_value_test() {
+  let json =
+    "
+    {
+      \"happy\": null
+    }
+    "
+
+  let expected = [
+    json.CurlyOpen,
+    json.String("happy"),
+    json.Colon,
+    json.Null,
+    json.CurlyClose,
+  ]
+
+  assert_token_result(json, expected)
+}
+
 fn assert_token_result(json, token_result) {
   token_result |> should.equal(lex.lex(json))
 }

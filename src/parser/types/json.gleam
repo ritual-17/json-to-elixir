@@ -8,5 +8,5 @@ pub type Token {
   ArrayOpen
   ArrayClose
   Comma
-  NullType
+  Null
 }

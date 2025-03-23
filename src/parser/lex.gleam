@@ -15,6 +15,7 @@ fn lex_r(chars, tokens) {
   use <- check_for_string(chars, tokens)
   use <- check_for_number(chars, tokens)
   use <- check_for_boolean(chars, tokens)
+  use <- check_for_null(chars, tokens)
   check_for_whitespace_or_json_syntax_char(chars, tokens)
 }
 
@@ -161,6 +162,22 @@ fn lex_boolean(chars) {
   case chars {
     ["t", "r", "u", "e", ..rest] -> #(Some(json.Boolean("true")), rest)
     ["f", "a", "l", "s", "e", ..rest] -> #(Some(json.Boolean("false")), rest)
+    _ -> #(None, chars)
+  }
+}
+
+fn check_for_null(chars, tokens, continue) {
+  let #(null, chars) = lex_null(chars)
+
+  case null {
+    None -> continue()
+    Some(null) -> lex_r(chars, list.append(tokens, [null]))
+  }
+}
+
+fn lex_null(chars) {
+  case chars {
+    ["n", "u", "l", "l", ..rest] -> #(Some(json.Null), rest)
     _ -> #(None, chars)
   }
 }
