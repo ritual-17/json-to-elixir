@@ -14,8 +14,7 @@ fn lex_r(chars, tokens) {
   use <- check_for_chars_remaining(chars, tokens)
   use <- check_for_string(chars, tokens)
   use <- check_for_number(chars, tokens)
-  // let #(number, chars) = lex_number(chars)
-  // tokens
+  use <- check_for_boolean(chars, tokens)
   check_for_whitespace_or_json_syntax_char(chars, tokens)
 }
 
@@ -147,6 +146,23 @@ fn check_digit(char) {
 fn check(char, regex) {
   let assert Ok(re) = from_string(regex)
   regexp.check(re, char)
+}
+
+fn check_for_boolean(chars, tokens, continue) {
+  let #(boolean, chars) = lex_boolean(chars)
+
+  case boolean {
+    None -> continue()
+    Some(boolean) -> lex_r(chars, list.append(tokens, [boolean]))
+  }
+}
+
+fn lex_boolean(chars) {
+  case chars {
+    ["t", "r", "u", "e", ..rest] -> #(Some(json.Boolean("true")), rest)
+    ["f", "a", "l", "s", "e", ..rest] -> #(Some(json.Boolean("false")), rest)
+    _ -> #(None, chars)
+  }
 }
 
 fn check_for_whitespace_or_json_syntax_char(chars, tokens) {
