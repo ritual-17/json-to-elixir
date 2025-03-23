@@ -7,6 +7,65 @@ pub fn main() {
   gleeunit.main()
 }
 
+pub fn lex_json_test() {
+  let json =
+    "
+    {
+      \"foo\": [1, null, true, false, {\"bar\": 1.9e-78}]
+    }
+    "
+  let expected = [
+    json.CurlyOpen,
+    json.String("foo"),
+    json.Colon,
+    json.ArrayOpen,
+    json.Number("1"),
+    json.Comma,
+    json.Null,
+    json.Comma,
+    json.Boolean("true"),
+    json.Comma,
+    json.Boolean("false"),
+    json.Comma,
+    json.CurlyOpen,
+    json.String("bar"),
+    json.Colon,
+    json.Number("1.9e-78"),
+    json.CurlyClose,
+    json.ArrayClose,
+    json.CurlyClose,
+  ]
+
+  assert_token_result(json, expected)
+}
+
+pub fn lex_json_list_test() {
+  let json =
+    "
+    [
+      { \"foo\": 1 },
+      { \"bar\": 2 }
+    ]
+    "
+  let expected = [
+    json.ArrayOpen,
+    json.CurlyOpen,
+    json.String("foo"),
+    json.Colon,
+    json.Number("1"),
+    json.CurlyClose,
+    json.Comma,
+    json.CurlyOpen,
+    json.String("bar"),
+    json.Colon,
+    json.Number("2"),
+    json.CurlyClose,
+    json.ArrayClose,
+  ]
+
+  assert_token_result(json, expected)
+}
+
 pub fn lex_empty_object_test() {
   let json = "{}"
   let expected = [json.CurlyOpen, json.CurlyClose]

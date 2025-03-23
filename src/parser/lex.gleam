@@ -72,7 +72,6 @@ fn lex_number(chars) {
   let #(chars, number_string) = get_fraction_number(chars, number_string)
   let #(chars, number_string) = get_exponent_number(chars, number_string)
   #(Some(number_string), chars)
-  // lex_number_r(chars, base_number)
 }
 
 fn strip_negative(chars) {
