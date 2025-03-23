@@ -63,7 +63,7 @@ fn check_for_number(chars, tokens, continue) {
 
 fn lex_number(chars: List(String)) -> #(Option(String), List(String)) {
   let original_chars = chars
-  let #(number_string, chars) = strip_negative(chars)
+  let #(chars, number_string) = strip_negative(chars)
 
   use chars, number_string <- check_if_start_of_number(
     chars,
@@ -72,14 +72,15 @@ fn lex_number(chars: List(String)) -> #(Option(String), List(String)) {
   )
   let #(chars, number_string) = get_whole_number(chars, number_string)
   let #(chars, number_string) = get_fraction_number(chars, number_string)
+  let #(chars, number_string) = get_exponent_number(chars, number_string)
   #(Some(number_string), chars)
   // lex_number_r(chars, base_number)
 }
 
 fn strip_negative(chars) {
   case chars {
-    ["-" as base_number, ..rest] -> #(base_number, rest)
-    _ -> #("", chars)
+    ["-" as base_number, ..rest] -> #(rest, base_number)
+    _ -> #(chars, "")
   }
 }
 
@@ -121,11 +122,24 @@ fn get_fraction_number(chars, number) {
   }
 }
 
-fn lex_number_r(
-  chars: List(String),
-  number: String,
-) -> #(Option(String), List(String)) {
-  todo
+fn get_exponent_number(chars, number) {
+  case chars {
+    [e, ..rest] if e == "e" || e == "E" -> {
+      let number = number <> e
+      let #(chars, number) = strip_magnitude_sign(rest, number)
+
+      get_whole_number_r(chars, number)
+    }
+    _ -> #(chars, number)
+  }
+}
+
+fn strip_magnitude_sign(chars, number) {
+  case chars {
+    ["-" as sign, ..rest] -> #(rest, number <> sign)
+    ["+" as sign, ..rest] -> #(rest, number <> sign)
+    _ -> #(chars, number)
+  }
 }
 
 fn check_digit(char: String) -> Bool {
