@@ -203,6 +203,101 @@ pub fn lex_0_start_fraction_value_test() {
   assert_token_result(json, expected)
 }
 
+pub fn lex_exponent_number_value_test() {
+  let json =
+    "
+  {
+    \"temperature\": 35e10
+  }
+  "
+
+  let expected = [
+    json.CurlyOpen,
+    json.String("temperature"),
+    json.Colon,
+    json.Number("35e10"),
+    json.CurlyClose,
+  ]
+
+  assert_token_result(json, expected)
+}
+
+pub fn lex_capital_exponent_number_value_test() {
+  let json =
+    "
+  {
+    \"temperature\": 35E10
+  }
+  "
+
+  let expected = [
+    json.CurlyOpen,
+    json.String("temperature"),
+    json.Colon,
+    json.Number("35E10"),
+    json.CurlyClose,
+  ]
+
+  assert_token_result(json, expected)
+}
+
+pub fn lex_leading_plus_exponent_number_value_test() {
+  let json =
+    "
+  {
+    \"temperature\": 35e+10
+  }
+  "
+
+  let expected = [
+    json.CurlyOpen,
+    json.String("temperature"),
+    json.Colon,
+    json.Number("35e+10"),
+    json.CurlyClose,
+  ]
+
+  assert_token_result(json, expected)
+}
+
+pub fn lex_leading_minus_exponent_number_value_test() {
+  let json =
+    "
+  {
+    \"temperature\": 35e-10
+  }
+  "
+
+  let expected = [
+    json.CurlyOpen,
+    json.String("temperature"),
+    json.Colon,
+    json.Number("35e-10"),
+    json.CurlyClose,
+  ]
+
+  assert_token_result(json, expected)
+}
+
+pub fn lex_fraction_exponent_number_value_test() {
+  let json =
+    "
+  {
+    \"temperature\": 0.83e-8320
+  }
+  "
+
+  let expected = [
+    json.CurlyOpen,
+    json.String("temperature"),
+    json.Colon,
+    json.Number("0.83e-8320"),
+    json.CurlyClose,
+  ]
+
+  assert_token_result(json, expected)
+}
+
 fn assert_token_result(json, token_result) {
   token_result |> should.equal(lex.lex(json))
 }
