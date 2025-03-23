@@ -98,6 +98,32 @@ pub fn lex_0_start_invalid_value_test() {
   assert_token_result(json, expected)
 }
 
+pub fn lex_fraction_number_value_test() {
+  let json =
+    "
+  {
+    \"temperature\": 3.1415926535
+  }
+  "
+
+  let expected = ["{", "temperature", ":", "3.1415926535", "}"]
+
+  assert_token_result(json, expected)
+}
+
+pub fn lex_negative_fraction_number_value_test() {
+  let json =
+    "
+  {
+    \"temperature\": -3.1415926535
+  }
+  "
+
+  let expected = ["{", "temperature", ":", "-3.1415926535", "}"]
+
+  assert_token_result(json, expected)
+}
+
 pub fn lex_0_start_fraction_value_test() {
   let json =
     "
