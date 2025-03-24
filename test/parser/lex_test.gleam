@@ -36,7 +36,7 @@ pub fn lex_json_test() {
     json.CurlyClose,
   ]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_json_list_test() {
@@ -63,14 +63,14 @@ pub fn lex_json_list_test() {
     json.ArrayClose,
   ]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_empty_object_test() {
   let json = "{}"
   let expected = [json.CurlyOpen, json.CurlyClose]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_string_value_test() {
@@ -83,7 +83,7 @@ pub fn lex_string_value_test() {
     json.CurlyClose,
   ]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_multi_line_string_value_test() {
@@ -101,7 +101,7 @@ pub fn lex_multi_line_string_value_test() {
     json.CurlyClose,
   ]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_string_list_value_test() {
@@ -125,7 +125,7 @@ pub fn lex_string_list_value_test() {
     json.CurlyClose,
   ]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_whole_number_value_test() {
@@ -144,7 +144,7 @@ pub fn lex_whole_number_value_test() {
     json.CurlyClose,
   ]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_negative_whole_number_value_test() {
@@ -163,7 +163,7 @@ pub fn lex_negative_whole_number_value_test() {
     json.CurlyClose,
   ]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_0_value_test() {
@@ -182,7 +182,7 @@ pub fn lex_0_value_test() {
     json.CurlyClose,
   ]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_0_start_invalid_value_test() {
@@ -202,7 +202,7 @@ pub fn lex_0_start_invalid_value_test() {
     json.CurlyClose,
   ]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_fraction_number_value_test() {
@@ -221,7 +221,7 @@ pub fn lex_fraction_number_value_test() {
     json.CurlyClose,
   ]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_negative_fraction_number_value_test() {
@@ -240,7 +240,7 @@ pub fn lex_negative_fraction_number_value_test() {
     json.CurlyClose,
   ]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_0_start_fraction_value_test() {
@@ -259,7 +259,7 @@ pub fn lex_0_start_fraction_value_test() {
     json.CurlyClose,
   ]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_exponent_number_value_test() {
@@ -278,7 +278,7 @@ pub fn lex_exponent_number_value_test() {
     json.CurlyClose,
   ]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_capital_exponent_number_value_test() {
@@ -297,7 +297,7 @@ pub fn lex_capital_exponent_number_value_test() {
     json.CurlyClose,
   ]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_leading_plus_exponent_number_value_test() {
@@ -316,7 +316,7 @@ pub fn lex_leading_plus_exponent_number_value_test() {
     json.CurlyClose,
   ]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_leading_minus_exponent_number_value_test() {
@@ -335,7 +335,7 @@ pub fn lex_leading_minus_exponent_number_value_test() {
     json.CurlyClose,
   ]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_fraction_exponent_number_value_test() {
@@ -354,7 +354,7 @@ pub fn lex_fraction_exponent_number_value_test() {
     json.CurlyClose,
   ]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_boolean_true_value_test() {
@@ -373,7 +373,7 @@ pub fn lex_boolean_true_value_test() {
     json.CurlyClose,
   ]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_boolean_value_false_test() {
@@ -392,7 +392,7 @@ pub fn lex_boolean_value_false_test() {
     json.CurlyClose,
   ]
 
-  assert_token_result(json, expected)
+  expected |> should.equal(lex.lex(json))
 }
 
 pub fn lex_null_value_test() {
@@ -411,9 +411,5 @@ pub fn lex_null_value_test() {
     json.CurlyClose,
   ]
 
-  assert_token_result(json, expected)
-}
-
-fn assert_token_result(json, token_result) {
-  token_result |> should.equal(lex.lex(json))
+  expected |> should.equal(lex.lex(json))
 }

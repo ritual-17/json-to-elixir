@@ -1,3 +1,4 @@
+import gleam/string
 import parser/lex
 import parser/types/json
 
@@ -47,15 +48,50 @@ fn parse_array_r(json_array, tokens) {
 }
 
 fn parse_object(tokens) {
-  todo
+  let json_object = "%{"
+
+  case tokens {
+    [json.CurlyClose, ..rest] -> #(json_object <> "}", rest)
+    _ -> parse_object_r(json_object, tokens)
+  }
+}
+
+fn parse_object_r(json_object, tokens) {
+  use key, value, tokens <- parse_key_value(tokens)
+  let json_object = json_object <> key <> ": " <> value
+
+  case tokens {
+    [json.CurlyClose, ..rest] -> #(json_object <> "}", rest)
+    [json.Comma, ..rest] -> parse_object_r(json_object <> ", ", rest)
+    _ -> panic
+  }
+}
+
+fn parse_key_value(tokens, continue) {
+  case tokens {
+    [json.String(key), json.Colon, ..rest] -> {
+      let #(value, tokens) = parse_r(rest)
+      continue(key, value, tokens)
+    }
+    _ -> panic
+  }
 }
 
 fn parse_value(tokens) {
   case tokens {
-    [json.String(string), ..rest] -> #(string, rest)
-    [json.Number(number), ..rest] -> #(number, rest)
+    [json.String(string), ..rest] -> #(parse_string(string), rest)
+    [json.Number(number), ..rest] -> #(parse_number(number), rest)
     [json.Boolean(boolean), ..rest] -> #(boolean, rest)
     [json.Null, ..rest] -> #("nil", rest)
     _ -> panic
   }
+}
+
+fn parse_string(string) {
+  "\"" <> string <> "\""
+}
+
+fn parse_number(number) {
+  number
+  |> string.replace("+", "")
 }
