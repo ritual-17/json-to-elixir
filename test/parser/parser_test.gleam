@@ -6,15 +6,20 @@ pub fn main() {
   gleeunit.main()
 }
 
-pub fn parse_map_from_json_test() {
-  "%{}"
-  |> should.equal(parser.parse_map_from_json("{}"))
-  // "%{name: \"john\"}"
-  // |> should.equal(parser.parse_map_from_json("{\"name\": \"john\"}"))
+pub fn from_string_empty_list_test() {
+  let string = "[]"
+
+  "[]" |> should.equal(parser.from_string(string))
 }
 
-// gleeunit test functions end in `_test`
-pub fn hello_world_test() {
-  1
-  |> should.equal(1)
+pub fn from_string_nested_list_test() {
+  let string = "[[]]"
+
+  "[[]]" |> should.equal(parser.from_string(string))
+}
+
+pub fn from_string_list_of_lists_test() {
+  let string = "[[[], []], [], []]"
+
+  "[[[], []], [], []]" |> should.equal(parser.from_string(string))
 }

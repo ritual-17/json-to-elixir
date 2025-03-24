@@ -1,33 +1,61 @@
-import gleam/regexp.{Options, check, compile}
-import gleam/string
+import parser/lex
+import parser/types/json
 
-pub fn parse_map_from_json(input: String) -> String {
-  input
-  |> string.to_graphemes()
-  |> parse_json("")
+pub fn from_string(string) {
+  let #(result, _) =
+    string
+    |> lex.lex()
+    |> parse
+
+  result
 }
 
-fn parse_json(char_list: List(String), acc: String) -> String {
-  case char_list {
-    ["{", ..rest] -> parse_json(rest, string.concat([acc, "%{"]))
-    ["}", ..rest] -> parse_json(rest, string.concat([acc, "}"]))
-    // [number(first(char_list)), ..rest] -> parse_json(rest(char_list))
-    _ -> acc
+fn parse(tokens) {
+  case tokens {
+    [t, ..] if t == json.ArrayOpen || t == json.CurlyOpen -> parse_r(tokens)
+    _ -> panic
   }
 }
 
-fn number(char: String) {
-  let options = Options(case_insensitive: True, multi_line: False)
-  let assert Ok(number_pattern) = compile("^[0-9]+$", with: options)
-
-  check(with: number_pattern, content: char)
+fn parse_r(tokens) {
+  case tokens {
+    [json.ArrayOpen, ..rest] -> parse_array(rest)
+    [json.CurlyOpen, ..rest] -> parse_object(rest)
+    [_, ..] -> parse_value(tokens)
+    _ -> panic
+  }
 }
 
-fn word(char: String) {
-  let options = Options(case_insensitive: True, multi_line: False)
-  let word_pattern = compile("^[a-zA-Z]+$", with: options)
+fn parse_array(tokens) {
+  let json_array = "["
+
+  case tokens {
+    [json.ArrayClose, ..rest] -> #(json_array <> "]", rest)
+    _ -> parse_array_r(json_array, tokens)
+  }
 }
 
-fn testy(char_list: List(String)) {
+fn parse_array_r(json_array, tokens) {
+  let #(json, tokens) = parse_r(tokens)
+  let json_array = json_array <> json
+
+  case tokens {
+    [json.ArrayClose, ..rest] -> #(json_array <> "]", rest)
+    [json.Comma, ..rest] -> parse_array_r(json_array <> ", ", rest)
+    _ -> panic
+  }
+}
+
+fn parse_object(tokens) {
   todo
+}
+
+fn parse_value(tokens) {
+  case tokens {
+    [json.String(string), ..rest] -> #(string, rest)
+    [json.Number(number), ..rest] -> #(number, rest)
+    [json.Boolean(boolean), ..rest] -> #(boolean, rest)
+    [json.Null, ..rest] -> #("nil", rest)
+    _ -> panic
+  }
 }
